@@ -5,3 +5,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/Minyus/g-sheet-x/blob/main/LICENSE)
 
 CLI for Google Sheet
+
+## Authentication
+
+Follow: <https://docs.gspread.org/en/v6.1.3/oauth2.html>
