@@ -46,7 +46,7 @@ def get_sheets(
     url: str | None = None,
     spreadsheet: str | None = None,
 ):
-    return repr(_get_sheets(url=url, spreadsheet=spreadsheet))
+    return "\n".join(_get_sheets(url=url, spreadsheet=spreadsheet))
 
 
 def _get_sheet(
