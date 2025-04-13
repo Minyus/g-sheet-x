@@ -80,22 +80,60 @@ def get(
     spreadsheet: str | None = None,
     folder: str | None = None,
     sheet: str = "",
-    format: str = "",
-    separator: str = ", ",
+    col: str = "",
+    col_sep: str = "\t",
+    filter: str = "",
+    filter_sep: str = "\t",
+    filter_col: str = "",
+    format: str = "sv",
+    separator: str = "\t",
 ):
     ws = _get_sheet(url=url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
-    if not format:
-        val_2d = ws.get_all_values()
-        return "\n".join([separator.join(val_1d) for val_1d in val_2d])
 
     dicts = ws.get_all_records()
+
+    if filter or col:
+        filter_vals = []
+        if filter:
+            assert filter_sep
+            assert filter_col
+            filter_vals = set(filter.split(filter_sep))
+        cols = []
+        if col:
+            assert col_sep
+            cols = col.split(col_sep)
+        dicts = [
+            ({c: d.get(c) for c in cols} if cols else d)
+            for d in dicts
+            if (not filter or d[filter_col] in filter_vals)
+        ]
+    elif format == "sv":
+        val_2d = ws.get_all_values()
+        return "\n".join(
+            [separator.join([str(v) for v in val_1d]) for val_1d in val_2d]
+        )
+
+    if format == "sv":
+        val_2d = [list(dicts[0].keys())] + [list(d.values()) for d in dicts]
+        return "\n".join(
+            [separator.join([str(v) for v in val_1d]) for val_1d in val_2d]
+        )
+
     if format == "json":
         return json.dumps(dicts, indent=2)
     if format == "yaml":
         return yaml.dump(dicts)
     if format == "report":
         return "\n".join(
-            [separator.join([f"{k} {v:+}" for (k, v) in d.items()]) for d in dicts]
+            [
+                separator.join(
+                    [
+                        f"{k} {v:+}" if isinstance(v, float) else f"{k} {v}"
+                        for (k, v) in d.items()
+                    ]
+                )
+                for d in dicts
+            ]
         )
     if format == "polars":
         import polars as pl
@@ -113,7 +151,7 @@ def get(
     raise NotImplementedError(format)
 
 
-def set(
+def update(
     url: str | None = None,
     spreadsheet: str | None = None,
     folder: str | None = None,
