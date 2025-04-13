@@ -6,6 +6,7 @@ import sys
 import typing as t
 
 import gspread
+from gspread.utils import ValueRenderOption, ValueInputOption
 
 
 def _get_spreadsheet(
@@ -80,6 +81,7 @@ def get(
     spreadsheet: str | None = None,
     folder: str | None = None,
     sheet: str = "",
+    render: str = "formula",
     col: str = "",
     col_sep: str = "\t",
     filter: str = "",
@@ -88,9 +90,9 @@ def get(
     format: str = "sv",
     separator: str = "\t",
 ):
+    vro = getattr(ValueRenderOption, render)
     ws = _get_sheet(url=url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
-
-    dicts = ws.get_all_records()
+    dicts = ws.get_all_records(value_render_option=vro)
 
     if filter or col:
         filter_vals = []
@@ -108,7 +110,7 @@ def get(
             if (not filter or d[filter_col] in filter_vals)
         ]
     elif format == "sv":
-        val_2d = ws.get_all_values()
+        val_2d = ws.get_all_values(value_render_option=vro)
         return "\n".join(
             [separator.join([str(v) for v in val_1d]) for val_1d in val_2d]
         )
@@ -180,8 +182,10 @@ def apply(
     template_sheet: str = "",
     sheet: str = "",
     sheet_sep: str = "\n",
+    render: str = "formula",
     delete_backup: bool = False,
 ):
+    vro = getattr(ValueRenderOption, render)
     assert template_sheet
     ss = _get_spreadsheet(url, spreadsheet=spreadsheet, folder=folder)
     if sheet:
@@ -192,7 +196,7 @@ def apply(
     for sheet in sheets:
         n_sheets = len(ss.worksheets())
         ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
-        val_2d = ws.get_all_values()
+        val_2d = ws.get_all_values(value_render_option=vro)
         ws_index = ws.index
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_sheet = sheet + "_" + timestamp
@@ -204,6 +208,6 @@ def apply(
             url, spreadsheet=spreadsheet, folder=folder, sheet=template_sheet
         )
         ws = template_ws.duplicate(new_sheet_name=sheet, insert_sheet_index=ws_index)
-        ws.update(val_2d)
+        ws.update(val_2d, value_input_option=ValueInputOption.user_entered)
         if delete_backup:
             ss.del_worksheet(backup_ws)
