@@ -139,14 +139,15 @@ def apply(
     url: str | None = None,
     spreadsheet: str | None = None,
     folder: str | None = None,
-    sheet: str = "",
     template_sheet: str = "",
+    sheet: str = "",
+    sheet_sep: str = "\n",
     delete_backup: bool = False,
 ):
     assert template_sheet
     ss = _get_spreadsheet(url, spreadsheet=spreadsheet, folder=folder)
     if sheet:
-        sheets = [sheet]
+        sheets = sheet.split(sheet_sep)
     else:
         sheets = [s.title for s in ss.worksheets() if s.title != template_sheet]
 
