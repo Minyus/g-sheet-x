@@ -42,7 +42,7 @@ def _get_sheets(
     return ws_ls
 
 
-def get_sheets(
+def list_sheets(
     url: str | None = None,
     spreadsheet: str | None = None,
 ):

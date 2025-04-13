@@ -1,13 +1,13 @@
 import fire
 
-from .gsheetx import get_spreadsheet, get_sheets, get_sheet, get, update, apply
+from .gsheetx import get_spreadsheet, list_sheets, get_sheet, get, update, apply
 
 
 def main():
     fire.Fire(
         dict(
             get_spreadsheet=get_spreadsheet,
-            get_sheets=get_sheets,
+            list_sheets=list_sheets,
             get_sheet=get_sheet,
             get=get,
             update=update,
