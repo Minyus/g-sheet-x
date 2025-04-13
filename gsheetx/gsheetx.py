@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import yaml
 from pathlib import Path
@@ -132,3 +133,38 @@ def set(
     val_2d = [row.split(separator) for row in text.split("\n")]
     ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
     ws.update(val_2d, cell)
+
+
+def apply(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
+    sheet: str = "",
+    template_sheet: str = "",
+    delete_backup: bool = False,
+):
+    assert template_sheet
+    ss = _get_spreadsheet(url, spreadsheet=spreadsheet, folder=folder)
+    if sheet:
+        sheets = [sheet]
+    else:
+        sheets = [s.title for s in ss.worksheets() if s.title != template_sheet]
+
+    for sheet in sheets:
+        n_sheets = len(ss.worksheets())
+        ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
+        val_2d = ws.get_all_values()
+        ws_index = ws.index
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_sheet = sheet + "_" + timestamp
+        backup_ws = ws.duplicate(
+            new_sheet_name=backup_sheet, insert_sheet_index=n_sheets
+        )
+        ss.del_worksheet(ws)
+        template_ws = _get_sheet(
+            url, spreadsheet=spreadsheet, folder=folder, sheet=template_sheet
+        )
+        ws = template_ws.duplicate(new_sheet_name=sheet, insert_sheet_index=ws_index)
+        ws.update(val_2d)
+        if delete_backup:
+            ss.del_worksheet(backup_ws)
