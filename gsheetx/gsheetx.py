@@ -7,23 +7,82 @@ import typing as t
 import gspread
 
 
-def _get_worksheet(
-    url: str,
-    sheet: str = "",
+def _get_spreadsheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
 ):
     gc = gspread.oauth()
-    ss = gc.open_by_url(url)
-    ws = ss.worksheet(sheet) if sheet else ss.get_worksheet(0)
-    return ws
+    if spreadsheet:
+        try:
+            return gc.open(spreadsheet)
+        except gspread.exceptions.SpreadsheetNotFound:
+            folder_id = folder.split(r":")[-1] if folder else None
+            return gc.create(spreadsheet, folder_id=folder_id)
+    if url:
+        return gc.open_by_url(url)
+    raise ValueError(repr(locals()))
+
+
+def get_spreadsheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
+):
+    return repr(_get_spreadsheet(url=url, spreadsheet=spreadsheet, folder=folder))
+
+
+def _get_sheets(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+):
+    ss = _get_spreadsheet(url, spreadsheet=spreadsheet)
+    ws_ls = [ws.title for ws in ss.worksheets()]
+    return ws_ls
+
+
+def get_sheets(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+):
+    return repr(_get_sheets(url=url, spreadsheet=spreadsheet))
+
+
+def _get_sheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
+    sheet: str = "",
+):
+    ss = _get_spreadsheet(url=url, spreadsheet=spreadsheet, folder=folder)
+    ws_ls = [ws.title for ws in ss.worksheets()]
+    if not sheet:
+        return ss.get_worksheet(0)
+    if sheet in ws_ls:
+        return ss.worksheet(sheet)
+    return ss.add_worksheet(sheet, rows=0, cols=0)
+
+
+def get_sheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
+    sheet: str = "",
+):
+    return repr(
+        _get_sheet(url=url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
+    )
 
 
 def get(
-    url: str,
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
     sheet: str = "",
     format: str = "",
     separator: str = ", ",
 ):
-    ws = _get_worksheet(url, sheet)
+    ws = _get_sheet(url=url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
     if not format:
         val_2d = ws.get_all_values()
         return "\n".join([separator.join(val_1d) for val_1d in val_2d])
@@ -54,7 +113,9 @@ def get(
 
 
 def set(
-    url: str,
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    folder: str | None = None,
     sheet: str = "",
     file: str = "",
     text: str = "",
@@ -69,5 +130,5 @@ def set(
         text = "\n".join(sys.stdin)
     assert text
     val_2d = [row.split(separator) for row in text.split("\n")]
-    ws = _get_worksheet(url, sheet)
+    ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
     ws.update(val_2d, cell)
