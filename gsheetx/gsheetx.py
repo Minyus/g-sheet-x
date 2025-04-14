@@ -22,7 +22,10 @@ def _get_spreadsheet(
             folder_id = folder.split(r":")[-1] if folder else None
             return gc.create(spreadsheet, folder_id=folder_id)
     if url:
-        return gc.open_by_url(url)
+        if url.startswith("http"):
+            return gc.open_by_url(url)
+        else:
+            return gc.open_by_key(url)
     raise ValueError(repr(locals()))
 
 
@@ -184,9 +187,25 @@ def apply(
     sheet_sep: str = "\n",
     render: str = "formula",
     delete_backup: bool = False,
+    to_copy: bool = False,
+    copy_as: str | None = None,
+    copy_prefix: str = "",
+    copy_postfix: str = " copied",
 ):
     vro = getattr(ValueRenderOption, render)
     assert template_sheet
+    if to_copy:
+        ss = _copy_spreadsheet(
+            url,
+            spreadsheet=spreadsheet,
+            folder=folder,
+            copy_as=copy_as,
+            copy_prefix=copy_prefix,
+            copy_postfix=copy_postfix,
+        )
+        url = ss.url
+        spreadsheet = None
+
     ss = _get_spreadsheet(url, spreadsheet=spreadsheet, folder=folder)
     if sheet:
         sheets = sheet.split(sheet_sep)
@@ -209,5 +228,61 @@ def apply(
         )
         ws = template_ws.duplicate(new_sheet_name=sheet, insert_sheet_index=ws_index)
         ws.update(val_2d, value_input_option=ValueInputOption.user_entered)
-        if delete_backup:
+        if delete_backup or to_copy:
             ss.del_worksheet(backup_ws)
+
+
+def _copy_spreadsheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    copy_as: str | None = None,
+    copy_prefix: str = "",
+    copy_postfix: str = " copied",
+    folder: str | None = None,
+    copy_permissions: bool = False,
+    skip_comments: bool = False,
+):
+    gc = gspread.oauth()
+
+    if spreadsheet:
+        ss = gc.open(spreadsheet)
+    elif url and url.startswith("http"):
+        ss = gc.open_by_url(url)
+    else:
+        assert url
+        ss = gc.open_by_key(url)
+    ss_id = ss.id
+    ss_title = ss.title
+    title = copy_as if copy_as else (copy_prefix + ss_title + copy_postfix)
+    folder_id = folder.split(r":")[-1] if folder else None
+    return gc.copy(
+        file_id=ss_id,
+        title=title,
+        copy_permissions=copy_permissions,
+        folder_id=folder_id,
+        copy_comments=not skip_comments,
+    )
+
+
+def copy_spreadsheet(
+    url: str | None = None,
+    spreadsheet: str | None = None,
+    copy_as: str | None = None,
+    copy_prefix: str = "",
+    copy_postfix: str = " copied",
+    folder: str | None = None,
+    copy_permissions: bool = False,
+    skip_comments: bool = False,
+):
+    return repr(
+        _copy_spreadsheet(
+            url=url,
+            spreadsheet=spreadsheet,
+            copy_as=copy_as,
+            copy_prefix=copy_prefix,
+            copy_postfix=copy_postfix,
+            folder=folder,
+            copy_permissions=copy_permissions,
+            skip_comments=skip_comments,
+        )
+    )

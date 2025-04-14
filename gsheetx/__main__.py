@@ -1,6 +1,14 @@
 import fire
 
-from .gsheetx import get_spreadsheet, list_sheets, get_sheet, get, update, apply
+from .gsheetx import (
+    get_spreadsheet,
+    list_sheets,
+    get_sheet,
+    get,
+    update,
+    apply,
+    copy_spreadsheet,
+)
 
 
 def main():
@@ -12,6 +20,7 @@ def main():
             get=get,
             update=update,
             apply=apply,
+            copy_spreadsheet=copy_spreadsheet,
         )
     )
 
