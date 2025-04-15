@@ -9,6 +9,10 @@ import gspread
 from gspread.utils import ValueRenderOption, ValueInputOption
 
 
+def _show(ss: gspread.Spreadsheet):
+    print(json.dumps(dict(url=ss.url, title=ss.title), indent=2))
+
+
 def _get_spreadsheet(
     url: str | None = None,
     spreadsheet: str | None = None,
@@ -34,7 +38,7 @@ def get_spreadsheet(
     spreadsheet: str | None = None,
     folder: str | None = None,
 ):
-    return repr(_get_spreadsheet(url=url, spreadsheet=spreadsheet, folder=folder))
+    return _show(_get_spreadsheet(url=url, spreadsheet=spreadsheet, folder=folder))
 
 
 def _get_sheets(
@@ -205,6 +209,7 @@ def apply(
         )
         url = ss.url
         spreadsheet = None
+        _show(ss)
 
     ss = _get_spreadsheet(url, spreadsheet=spreadsheet, folder=folder)
     if sheet:
@@ -274,7 +279,7 @@ def copy_spreadsheet(
     copy_permissions: bool = False,
     skip_comments: bool = False,
 ):
-    return repr(
+    return _show(
         _copy_spreadsheet(
             url=url,
             spreadsheet=spreadsheet,
