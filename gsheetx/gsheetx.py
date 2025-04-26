@@ -96,13 +96,14 @@ def get(
     filter_col: str = "",
     format: str = "sv",
     separator: str = "\t",
+    fill_strategy: str = "",
 ):
     vro = getattr(ValueRenderOption, render)
     ws = _get_sheet(url=url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
     dicts = ws.get_all_records(value_render_option=vro)
 
-    if filter or col:
-        filter_vals = []
+    if filter or col or fill_strategy:
+        filter_vals = None
         if filter:
             assert filter_sep
             assert filter_col
@@ -114,8 +115,17 @@ def get(
         dicts = [
             ({c: d.get(c) for c in cols} if cols else d)
             for d in dicts
-            if (not filter or d[filter_col] in filter_vals)
+            if (filter_vals is None or d[filter_col] in filter_vals)
         ]
+        if fill_strategy:
+            import polars as pl
+
+            df = pl.DataFrame(dicts)
+            for c in df.columns:
+                df = df.with_columns(
+                    pl.col(c).replace("", None).fill_null(strategy=fill_strategy)
+                )
+            dicts = df.to_dicts()
     elif format == "sv":
         val_2d = ws.get_all_values(value_render_option=vro)
         return "\n".join(
