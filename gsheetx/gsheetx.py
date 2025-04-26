@@ -123,7 +123,10 @@ def get(
             df = pl.DataFrame(dicts)
             for c in df.columns:
                 df = df.with_columns(
-                    pl.col(c).replace("", None).fill_null(strategy=fill_strategy)
+                    pl.col(c)
+                    .replace("", None)
+                    .fill_null(strategy=fill_strategy)
+                    .replace(None, "")
                 )
             dicts = df.to_dicts()
     elif format == "sv":
