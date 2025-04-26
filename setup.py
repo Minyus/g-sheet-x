@@ -19,7 +19,7 @@ https://github.com/Minyus/g-sheet-x
 
 setup(
     name="gsheetx",
-    version="0.0.3",
+    version="0.0.4",
     packages=find_packages(exclude=["tests"]),
     entry_points={"console_scripts": console_scripts},
     install_requires=requires,
