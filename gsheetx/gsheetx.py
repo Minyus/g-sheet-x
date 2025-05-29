@@ -181,7 +181,8 @@ def update(
     file: str = "",
     text: str = "",
     separator: str = "\t",
-    cell: str = "A1",
+    cell: str = "",
+    parse: bool = False,
 ):
     if text:
         pass
@@ -190,9 +191,29 @@ def update(
     else:
         text = "\n".join(sys.stdin)
     assert text
-    val_2d = [row.split(separator) for row in text.split("\n")]
     ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
-    ws.update(val_2d, cell)
+    ll = None
+    if not (cell and cell[-1] in {str(i) for i in range(10)}):
+        ll = ws.get_all_values()
+        next_row = len(ll) + 1
+        first_col = cell or "A"
+        cell = f"{first_col}{next_row}"
+    if isinstance(text, (dict, list)):
+        if isinstance(text, list):
+            val_dicts = text
+        else:
+            val_dicts = [text]
+        ll = ll or ws.get_all_values()
+        if ll:
+            keys = ll[0]
+            header = []
+        else:
+            keys = list(val_dicts[0].keys())
+            header = [keys]
+        val_2d = header + [[str(val_d.get(k, "")) for k in keys] for val_d in val_dicts]
+    else:
+        val_2d = [row.split(separator) for row in text.split("\n")]
+    ws.update(val_2d, cell, raw=not parse)
 
 
 def apply(
