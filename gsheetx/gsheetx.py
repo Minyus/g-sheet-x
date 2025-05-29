@@ -173,6 +173,13 @@ def get(
     raise NotImplementedError(format)
 
 
+def _get_all_values(ws: gspread.Worksheet):
+    vals = ws.get_all_values()
+    if len(vals) == 1 and not vals[0]:
+        return []
+    return vals
+
+
 def update(
     url: str | None = None,
     spreadsheet: str | None = None,
@@ -189,12 +196,16 @@ def update(
     elif file:
         text = Path(file).read_text()
     else:
-        text = "\n".join(sys.stdin)
+        text = "\n".join(sys.stdin).strip()
+        try:
+            text = eval(text)
+        except Exception:
+            pass
     assert text
     ws = _get_sheet(url, spreadsheet=spreadsheet, folder=folder, sheet=sheet)
     ll = None
     if not (cell and cell[-1] in {str(i) for i in range(10)}):
-        ll = ws.get_all_values()
+        ll = _get_all_values(ws)
         next_row = len(ll) + 1
         first_col = cell or "A"
         cell = f"{first_col}{next_row}"
@@ -203,8 +214,8 @@ def update(
             val_dicts = text
         else:
             val_dicts = [text]
-        ll = ll or ws.get_all_values()
-        if ll:
+        ll = ll or _get_all_values(ws)
+        if ll and ll[0]:
             keys = ll[0]
             header = []
         else:
