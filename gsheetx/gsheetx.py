@@ -186,13 +186,15 @@ def update(
     folder: str | None = None,
     sheet: str = "",
     file: str = "",
-    text: str = "",
+    content: str | dict = "",
     separator: str = "\t",
+    extra: dict | None = None,
     cell: str = "",
     parse: bool = False,
+    verbose: bool = False,
 ):
-    if text:
-        pass
+    if content:
+        text = content
     elif file:
         text = Path(file).read_text()
     else:
@@ -221,9 +223,16 @@ def update(
         else:
             keys = list(val_dicts[0].keys())
             header = [keys]
+        if extra:
+            assert isinstance(extra, dict)
+            for val_d in val_dicts:
+                val_d.update(extra)
         val_2d = header + [[str(val_d.get(k, "")) for k in keys] for val_d in val_dicts]
     else:
         val_2d = [row.split(separator) for row in text.split("\n")]
+    if verbose:
+        for val_1d in val_2d:
+            print(separator.join(val_1d))
     ws.update(val_2d, cell, raw=not parse)
 
 
